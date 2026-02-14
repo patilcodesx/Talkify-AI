@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Talkify-AI
 =======
 # Welcome to your Lovable project
@@ -75,3 +75,6 @@ To connect a domain, navigate to Project > Settings > Domains and click Connect 
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
 >>>>>>> a154f72 (Frontend added)
+=======
+# Demo
+>>>>>>> 832a8846b1ac1a8b5d9e3bede4d41ddd239b87c4
