@@ -1,131 +1,40 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    container_name: talkfiy-postgres
-    environment:
-      POSTGRES_DB: talkfiy_db
-      POSTGRES_USER: talkfiy
-      POSTGRES_PASSWORD: talkfiy123
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./database/init:/docker-entrypoint-initdb.d
-    networks:
-      - talkfiy-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U talkfiy"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # MongoDB Database
   mongodb:
-    image: mongo:7-jammy
-    container_name: talkfiy-mongodb
-    environment:
-      MONGO_INITDB_DATABASE: talkfiy
-      MONGO_INITDB_ROOT_USERNAME: talkfiy
-      MONGO_INITDB_ROOT_PASSWORD: talkfiy123
+    image: mongo:7.0
+    container_name: talkify-mongodb
     ports:
       - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: talkfiy_messages
     volumes:
-      - mongodb-data:/data/db
-      - ./database/mongo-init:/docker-entrypoint-initdb.d
-    networks:
-      - talkfiy-network
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - mongodb_data:/data/db
+    restart: unless-stopped
 
-  # Redis Cache
+  postgres:
+    image: postgres:16-alpine
+    container_name: talkify-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: talkfiy_chat
+      POSTGRES_USER: talkfiy_user
+      POSTGRES_PASSWORD: talkfiy_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
-    container_name: talkfiy-redis
-    command: redis-server --appendonly yes --requirepass talkfiy123
+    container_name: talkify-redis
     ports:
       - "6379:6379"
     volumes:
-      - redis-data:/data
-    networks:
-      - talkfiy-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # RabbitMQ Message Broker
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: talkfiy-rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: talkfiy
-      RABBITMQ_DEFAULT_PASS: talkfiy123
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-    networks:
-      - talkfiy-network
-    healthcheck:
-      test: rabbitmq-diagnostics -q ping
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Elasticsearch
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: talkfiy-elasticsearch
-    environment:
-      - discovery.type=single-node
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - xpack.security.enabled=false
-    ports:
-      - "9200:9200"
-    volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data
-    networks:
-      - talkfiy-network
-
-  # User Service
-  user-service:
-    build:
-      context: ./backend/user-service
-      dockerfile: Dockerfile
-    container_name: talkfiy-user-service
-    ports:
-      - "8081:8081"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - DATABASE_URL=jdbc:postgresql://postgres:5432/talkfiy_db
-      - DATABASE_USERNAME=talkfiy
-      - DATABASE_PASSWORD=talkfiy123
-      - REDIS_HOST=redis
-      - REDIS_PASSWORD=talkfiy123
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - talkfiy-network
+      - redis_data:/data
     restart: unless-stopped
 
 volumes:
-  postgres-data:
-  mongodb-data:
-  redis-data:
-  rabbitmq-data:
-  elasticsearch-data:
-
-networks:
-  talkfiy-network:
-    driver: bridge
+  mongodb_data:
+  postgres_data:
+  redis_data:
